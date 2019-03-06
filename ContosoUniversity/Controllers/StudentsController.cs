@@ -11,6 +11,12 @@ using ContosoUniversity.Models;
 
 namespace ContosoUniversity.Controllers
 {
+    public enum SortOrder
+    {
+        @default,lastName_desc,   // 根据姓氏正反序排列
+        firstName_asc,firstNaem_desc,   // 根据名字正反序排列
+        date_asc,date_desc  // 根据日期正反序排列
+    }
     public class StudentsController : Controller
     {
         private readonly SchoolContext _context;
@@ -21,10 +27,95 @@ namespace ContosoUniversity.Controllers
         }
 
         // GET: Students
-        public async Task<IActionResult> Index()
+
+        #region 旧的Index方法，使用字符串参数
+        //public async Task<IActionResult> Index(string sortOrder = "default")
+        //{
+        //    ViewData["LastNameSortParm"] = sortOrder == "default" ? "lastName_desc" : "default";
+        //    ViewData["FirstNameSortParm"] = sortOrder == "firstName_asc" ? "firstName_desc" : "firstName_asc";
+        //    ViewData["DateSortParm"] = sortOrder == "date_asc" ? "date_desc" : "date_asc";
+        //    var students = from s in _context.Students
+        //                   select s;
+        //    switch (sortOrder)
+        //    {
+        //        case "default":
+        //            students = students.OrderBy(s => s.LastName);
+        //            break;
+        //        case "lastName_desc":
+        //            students = students.OrderByDescending(s => s.LastName);
+        //            break;
+        //        case "firstName_asc":
+        //            students = students.OrderBy(s => s.FirstMidName);
+        //            break;
+        //        case "firstName_desc":
+        //            students = students.OrderByDescending(s => s.FirstMidName);
+        //            break;
+        //        case "date_asc":
+        //            students = students.OrderBy(s => s.EnrollmentDate);
+        //            break;
+        //        case "date_desc":
+        //            students = students.OrderByDescending(s => s.EnrollmentDate);
+        //            break;
+        //        default:
+        //            throw new Exception("排序时内部数据错误！");
+        //    }
+        //    return View(await students.ToListAsync());
+        //} 
+        #endregion
+
+        #region 新的Index方法，使用枚举参数
+        public async Task<IActionResult> Index(string searchString,string currentFilter,int? page,SortOrder sortOrder = SortOrder.@default)
         {
-            return View(await _context.Students.ToListAsync());
-        }
+            ViewData["LastNameSortParm"] = sortOrder == SortOrder.@default ? SortOrder.lastName_desc : SortOrder.@default;
+            ViewData["FirstNameSortParm"] = sortOrder == SortOrder.firstName_asc ? SortOrder.firstNaem_desc : SortOrder.firstName_asc;
+            ViewData["DateSortParm"] = sortOrder == SortOrder.date_asc ? SortOrder.date_desc : SortOrder.date_asc;
+            ViewData["CurrentSort"] = sortOrder;
+
+            if (searchString != null)
+            {
+                page = 1;
+            }
+            else
+            {
+                searchString = currentFilter;
+            }
+
+            ViewData["CurrentFilter"] = searchString;
+
+            var students = from s in _context.Students
+                           select s;
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                students=students.Where(s => s.LastName.Contains(searchString) || s.FirstMidName.Contains(searchString));
+            }
+            switch (sortOrder)
+            {
+                case SortOrder.@default:
+                    students = students.OrderBy(s => s.LastName);
+                    break;
+                case SortOrder.lastName_desc:
+                    students = students.OrderByDescending(s => s.LastName);
+                    break;
+                case SortOrder.firstName_asc:
+                    students = students.OrderBy(s => s.FirstMidName);
+                    break;
+                case SortOrder.firstNaem_desc:
+                    students = students.OrderByDescending(s => s.FirstMidName);
+                    break;
+                case SortOrder.date_asc:
+                    students = students.OrderBy(s => s.EnrollmentDate);
+                    break;
+                case SortOrder.date_desc:
+                    students = students.OrderByDescending(s => s.EnrollmentDate);
+                    break;
+                default:
+                    throw new Exception("排序时内部数据错误！");
+            }
+            int pageSize = 3;
+
+            return View(await PaginatedList<Student>.CreateAsync(students.AsNoTracking(), page ?? 1, pageSize));
+        } 
+        #endregion
 
         // GET: Students/Details/5
         public async Task<IActionResult> Details(int? id)
