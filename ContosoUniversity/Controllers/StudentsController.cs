@@ -148,6 +148,7 @@ namespace ContosoUniversity.Controllers
         // GET: Students/Create
         public IActionResult Create()
         {
+
             return View();
         }
 
