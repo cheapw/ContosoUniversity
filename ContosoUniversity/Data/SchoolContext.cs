@@ -36,8 +36,8 @@ namespace ContosoUniversity.Data
             modelBuilder.Entity<CourseAssignment>().HasKey(c => new { c.CourseID, c.InstructorID });
 
             // specify the tracking property 指定跟踪属性
-            modelBuilder.Entity<Department>()
-                .Property(p => p.RowVersion).IsConcurrencyToken();
+            //modelBuilder.Entity<Department>()
+            //    .Property(p => p.RowVersion).IsConcurrencyToken();
         }
     }
 }
